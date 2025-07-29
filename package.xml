@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>dvrk_psm_ros2_nodes</name>
+  <version>0.1.0</version>
+  <description>ROS 2 nodes for dVRK PSM kinematics and joint-level control using CRTK topics.</description>
+
+  <maintainer email="aravindskumar1998@gmail.com">Aravind</maintainer>
+  <license>BSD-3-Clause</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>crtk_msgs</exec_depend>
+  <exec_depend>cisst</exec_depend>
+  <exec_depend>cisst-ros</exec_depend>
+  <exec_depend>tf_transformations</exec_depend>
+
+<!-- Find where dvrk console is installed and then load the arm and tool -->
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
+ 
