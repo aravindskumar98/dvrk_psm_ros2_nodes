@@ -84,7 +84,7 @@ class PSMKinematicNode(Node):
         pose.pose.orientation.w = quat[3]
         self.setpoint_cp_pub.publish(pose)
         # Publish measured Cartesian position
-        self
+        self.measured_cp_pub.publish(pose)
 
 def main():
     rclpy.init()
@@ -93,45 +93,3 @@ def main():
 
 
 
-# #!/usr/bin/env python3
-# import rclpy
-# from rclpy.node import Node
-# from sensor_msgs.msg import JointState
-
-# import cisstRobotPython as crp
-# CISST_OK = True
-
-# class PSMKinematicNode(Node):
-#     def __init__(self):
-#         super().__init__('psm_kinematic_ros2node')
-#         self.get_logger().info(f"Starting PSM Kinematic Node (cisstRobotPython import={CISST_OK})")
-
-#         self.sub = self.create_subscription(
-#             JointState,
-#             'PSM1/measured_js',
-#             self.measured_js_callback,
-#             10
-#         )
-
-#         self.pub = self.create_publisher(
-#             JointState,
-#             'PSM1/setpoint_js',
-#             10
-#         )
-
-#     def measured_js_callback(self, msg):
-#         self.get_logger().info(f"Received measured_js with {len(msg.position)} joints")
-
-#         # In a real system, you would use crp.robManipulator here to do FK or IK.
-#         out = JointState()
-#         out.header = msg.header
-#         out.name = msg.name
-#         out.position = msg.position  # placeholder
-#         self.pub.publish(out)
-
-# def main():
-#     rclpy.init()
-#     node = PSMKinematicNode()
-#     rclpy.spin(node)
-#     node.destroy_node()
-#     rclpy.shutdown()
