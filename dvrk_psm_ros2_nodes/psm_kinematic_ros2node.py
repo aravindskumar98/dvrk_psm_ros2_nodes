@@ -1,25 +1,35 @@
 
 #!/usr/bin/env python3
 
+import os
+import numpy as np
 import rclpy
 from rclpy.node import Node
-
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped
-from crtk_msgs.msg import OperatingState, StringStamped
-
 from std_msgs.msg import Header
-from cisstRobotPython import robManipulator
+from ament_index_python.packages import get_package_share_directory
+
+from crtk_msgs.msg import OperatingState, StringStamped
 from tf_transformations import quaternion_matrix, quaternion_from_matrix
-import numpy as np
+from cisstRobotPython import robManipulator
 
 class PSMKinematicNode(Node):
     def __init__(self):
         super().__init__('psm_kinematic_ros2node')
 
         # Load robot
-        arm_path = '/home/arav/ros2_ws/src/cisst-saw/sawIntuitiveResearchKit/share/kinematic/PSM.json'
-        tool_path = '/home/arav/ros2_ws/src/cisst-saw/sawIntuitiveResearchKit/share/tool/LARGE_NEEDLE_DRIVER_400006.json'
+        arm_pkg  = self.declare_parameter('arm_pkg',  'dvrk_config').get_parameter_value().string_value
+        tool_pkg = self.declare_parameter('tool_pkg', 'dvrk_config').get_parameter_value().string_value
+
+        arm_rel  = self.declare_parameter('arm_relpath',  'kinematic/PSM.json').get_parameter_value().string_value
+        tool_rel = self.declare_parameter('tool_relpath', 'tool/LARGE_NEEDLE_DRIVER_400006.json').get_parameter_value().string_value ## FIXME: Tool name can be moved to a config file or added to launch.py
+
+        arm_path  = os.path.join(get_package_share_directory(arm_pkg),  arm_rel)
+        tool_path = os.path.join(get_package_share_directory(tool_pkg), tool_rel)
+
+        self.get_logger().info(f'Using arm model:  {arm_path}')
+        self.get_logger().info(f'Using tool model: {tool_path}')
 
         self.robot = robManipulator()
         self.robot.LoadRobot(arm_path)
@@ -30,7 +40,6 @@ class PSMKinematicNode(Node):
 
         self.state_sub = self.create_subscription(StringStamped, '/PSM1/state_command', self.state_cb, 10)
         self.state_pub = self.create_publisher(OperatingState, '/PSM1/operating_state', 10)
-        self.create_timer(0.05, self.publish_operating_state)
 
         self.servo_cp_sub = self.create_subscription(PoseStamped, '/PSM1/servo_cp', self.ik_cb, 10)
         self.servo_jp_pub = self.create_publisher(JointState, '/PSM1/servo_jp', 10)
@@ -40,7 +49,7 @@ class PSMKinematicNode(Node):
         self.measured_cp_pub = self.create_publisher(PoseStamped, '/PSM1/measured_cp', 10)
 
     def state_cb(self, msg):
-        pass  # ignore
+        self.publish_operating_state()
 
     def publish_operating_state(self): ## Can be made a call back
         msg = OperatingState()

@@ -16,8 +16,7 @@
   <exec_depend>cisst</exec_depend>
   <exec_depend>cisst-ros</exec_depend>
   <exec_depend>tf_transformations</exec_depend>
-
-<!-- Find where dvrk console is installed and then load the arm and tool -->
+  <exec_depend>ament_index_python</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>
