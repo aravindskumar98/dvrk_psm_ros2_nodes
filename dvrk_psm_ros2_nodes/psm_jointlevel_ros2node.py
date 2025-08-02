@@ -10,6 +10,9 @@ class PSMJointLevelNode(Node):
     def __init__(self):
         super().__init__('psm_jointlevel_ros2node')
 
+        namespace_prefix = f'/{self.declare_parameter('arm_namespace_prefix', 'PSM1').get_parameter_value().string_value}'
+        self.get_logger().info(f'[ROS2 JointLevel Node] Using namespace: {namespace_prefix}')
+
         # Set initial joint position (e.g., 8 cm insertion)
         jp = numpy.zeros(6)
         jp[2] = 0.08  # joint 3 = insertion
@@ -27,13 +30,13 @@ class PSMJointLevelNode(Node):
         self.latest_jaw_jp.effort = []
 
         # ROS pub/sub for full arm
-        self.pub_setpoint_js = self.create_publisher(JointState, '/PSM1/setpoint_js', 10)
-        self.create_subscription(JointState, '/PSM1/servo_jp', self.cb_servo_jp, 10)
+        self.pub_setpoint_js = self.create_publisher(JointState, f'{namespace_prefix}/setpoint_js', 10)
+        self.create_subscription(JointState, f'{namespace_prefix}/servo_jp', self.cb_servo_jp, 10)
 
         # ROS pub/sub for jaw
-        self.create_subscription(JointState, '/PSM1/jaw/servo_jp', self.cb_servo_jaw_jp, 10)
-        self.pub_jaw_setpoint = self.create_publisher(JointState, '/PSM1/jaw/setpoint_js', 10)
-        self.pub_jaw_measured = self.create_publisher(JointState, '/PSM1/jaw/measured_js', 10)
+        self.create_subscription(JointState, f'{namespace_prefix}/jaw/servo_jp', self.cb_servo_jaw_jp, 10)
+        self.pub_jaw_setpoint = self.create_publisher(JointState, f'{namespace_prefix}/jaw/setpoint_js', 10)
+        self.pub_jaw_measured = self.create_publisher(JointState, f'{namespace_prefix}/jaw/measured_js', 10)
 
         # Timer to stream at 500 Hz
         self.timer = self.create_timer(0.002, self.publish_setpoint)

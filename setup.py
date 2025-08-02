@@ -1,4 +1,5 @@
 from setuptools import setup
+from glob import glob
 
 package_name = 'dvrk_psm_ros2_nodes'
 
@@ -10,6 +11,7 @@ setup(
         ('share/ament_index/resource_index/packages', [f'resource/{package_name}']),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', ['launch/bringup.launch.py']),
+        ('share/' + package_name + '/config', glob('config/*.yaml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

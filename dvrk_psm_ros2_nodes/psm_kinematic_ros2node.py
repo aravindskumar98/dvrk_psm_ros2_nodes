@@ -21,15 +21,16 @@ class PSMKinematicNode(Node):
         # Load robot
         arm_pkg  = self.declare_parameter('arm_pkg',  'dvrk_config').get_parameter_value().string_value
         tool_pkg = self.declare_parameter('tool_pkg', 'dvrk_config').get_parameter_value().string_value
-
         arm_rel  = self.declare_parameter('arm_relpath',  'kinematic/PSM.json').get_parameter_value().string_value
         tool_rel = self.declare_parameter('tool_relpath', 'tool/LARGE_NEEDLE_DRIVER_400006.json').get_parameter_value().string_value ## FIXME: Tool name can be moved to a config file or added to launch.py
+        namespace_prefix = f'/{self.declare_parameter('arm_namespace_prefix', 'PSM1').get_parameter_value().string_value}'
 
         arm_path  = os.path.join(get_package_share_directory(arm_pkg),  arm_rel)
         tool_path = os.path.join(get_package_share_directory(tool_pkg), tool_rel)
 
-        self.get_logger().info(f'Using arm model:  {arm_path}')
-        self.get_logger().info(f'Using tool model: {tool_path}')
+        self.get_logger().info(f'[ROS2 Kinematic Node] Using namespace: {namespace_prefix}')
+        self.get_logger().info(f'[ROS2 Kinematic Node] Arm model:  {arm_path}')
+        self.get_logger().info(f'[ROS2 Kinematic Node] Tool model: {tool_path}')
 
         self.robot = robManipulator()
         self.robot.LoadRobot(arm_path)
@@ -38,15 +39,15 @@ class PSMKinematicNode(Node):
         self.num_joints = len(self.robot.links)
         self.last_joint_position = np.zeros(self.num_joints)
 
-        self.state_sub = self.create_subscription(StringStamped, '/PSM1/state_command', self.state_cb, 10)
-        self.state_pub = self.create_publisher(OperatingState, '/PSM1/operating_state', 10)
+        self.state_sub = self.create_subscription(StringStamped, f'{namespace_prefix}/state_command', self.state_cb, 10)
+        self.state_pub = self.create_publisher(OperatingState, f'{namespace_prefix}/operating_state', 10)
 
-        self.servo_cp_sub = self.create_subscription(PoseStamped, '/PSM1/servo_cp', self.ik_cb, 10)
-        self.servo_jp_pub = self.create_publisher(JointState, '/PSM1/servo_jp', 10)
+        self.servo_cp_sub = self.create_subscription(PoseStamped, f'{namespace_prefix}/servo_cp', self.ik_cb, 10)
+        self.servo_jp_pub = self.create_publisher(JointState, f'{namespace_prefix}/servo_jp', 10)
 
-        self.setpoint_js_sub = self.create_subscription(JointState, '/PSM1/setpoint_js', self.fk_cb, 10)
-        self.setpoint_cp_pub = self.create_publisher(PoseStamped, '/PSM1/setpoint_cp', 10)
-        self.measured_cp_pub = self.create_publisher(PoseStamped, '/PSM1/measured_cp', 10)
+        self.setpoint_js_sub = self.create_subscription(JointState, f'{namespace_prefix}/setpoint_js', self.fk_cb, 10)
+        self.setpoint_cp_pub = self.create_publisher(PoseStamped, f'{namespace_prefix}/setpoint_cp', 10)
+        self.measured_cp_pub = self.create_publisher(PoseStamped, f'{namespace_prefix}/measured_cp', 10)
 
     def state_cb(self, msg):
         self.publish_operating_state()
