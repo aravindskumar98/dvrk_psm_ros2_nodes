@@ -14,6 +14,14 @@ from crtk_msgs.msg import OperatingState, StringStamped
 from tf_transformations import quaternion_matrix, quaternion_from_matrix
 from cisstRobotPython import robManipulator
 
+from rclpy.qos import QoSProfile, HistoryPolicy, DurabilityPolicy
+
+def latched_qos(depth: int = 1) -> QoSProfile:
+    qos = QoSProfile(depth=depth)
+    qos.history = HistoryPolicy.KEEP_LAST       # keep the last ‘depth’ msgs
+    qos.durability = DurabilityPolicy.TRANSIENT_LOCAL  # store them in the RMW
+    return qos
+
 class PSMKinematicNode(Node):
     def __init__(self):
         super().__init__('psm_kinematic_ros2node')
@@ -39,8 +47,8 @@ class PSMKinematicNode(Node):
         self.num_joints = len(self.robot.links)
         self.last_joint_position = np.zeros(self.num_joints)
 
-        self.state_sub = self.create_subscription(StringStamped, f'{namespace_prefix}/state_command', self.state_cb, 10)
-        self.state_pub = self.create_publisher(OperatingState, f'{namespace_prefix}/operating_state', 10)
+        self.state_sub = self.create_subscription(StringStamped, f'{namespace_prefix}/state_command', self.state_cb, 10) # subscriber can stay VOLATILE
+        self.state_pub = self.create_publisher(OperatingState, f'{namespace_prefix}/operating_state', latched_qos(1000)) # latched publisher
 
         self.servo_cp_sub = self.create_subscription(PoseStamped, f'{namespace_prefix}/servo_cp', self.ik_cb, 10)
         self.servo_jp_pub = self.create_publisher(JointState, f'{namespace_prefix}/servo_jp', 10)
@@ -48,6 +56,8 @@ class PSMKinematicNode(Node):
         self.setpoint_js_sub = self.create_subscription(JointState, f'{namespace_prefix}/setpoint_js', self.fk_cb, 10)
         self.setpoint_cp_pub = self.create_publisher(PoseStamped, f'{namespace_prefix}/setpoint_cp', 10)
         self.measured_cp_pub = self.create_publisher(PoseStamped, f'{namespace_prefix}/measured_cp', 10)
+
+        self.publish_operating_state()  # Initial state
 
     def state_cb(self, msg):
         self.publish_operating_state()
