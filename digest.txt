@@ -1,0 +1,424 @@
+Directory structure:
+└── dvrk_psm_ros2_nodes/
+    ├── README.md
+    ├── LICENSE
+    ├── package.xml
+    ├── setup.cfg
+    ├── setup.py
+    ├── config/
+    │   ├── custom.yaml
+    │   └── default.yaml
+    ├── dvrk_psm_ros2_nodes/
+    │   ├── __init__.py
+    │   ├── psm_jointlevel_ros2node.py
+    │   └── psm_kinematic_ros2node.py
+    ├── launch/
+    │   └── bringup.launch.py
+    └── resource/
+        └── dvrk_psm_ros2_nodes
+
+================================================
+FILE: README.md
+================================================
+
+# dvrk_psm_ros2_nodes
+
+ROS 2 nodes for dVRK PSM kinematics and joint-level control.
+
+## Launch
+
+**Default (PSM1):**
+```bash
+ros2 launch dvrk_psm_ros2_nodes bringup.launch.py
+````
+
+**Switch to PSM2 with different tool/arm:**
+
+```bash
+ros2 launch dvrk_psm_ros2_nodes bringup.launch.py arm_namespace:=PSM2 config:=$(ros2 pkg prefix dvrk_psm_ros2_nodes)/share/dvrk_psm_ros2_nodes/config/custom.yaml
+```
+
+**Custom config:**
+Copy `config/default.yaml` and modify:
+
+* `arm_relpath`, `tool_relpath`: paths to model JSONs 
+
+
+
+
+================================================
+FILE: LICENSE
+================================================
+MIT License
+
+Copyright (c) 2025 Aravind S Kumar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+
+================================================
+FILE: package.xml
+================================================
+<?xml version="1.0"?>
+<package format="3">
+  <name>dvrk_psm_ros2_nodes</name>
+  <version>0.1.0</version>
+  <description>ROS 2 nodes for dVRK PSM kinematics and joint-level control using CRTK topics.</description>
+
+  <maintainer email="aravindskumar1998@gmail.com">Aravind</maintainer>
+  <license>BSD-3-Clause</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>crtk_msgs</exec_depend>
+  <exec_depend>cisst</exec_depend>
+  <exec_depend>cisst-ros</exec_depend>
+  <exec_depend>tf_transformations</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
+ 
+
+
+================================================
+FILE: setup.cfg
+================================================
+[develop]
+script_dir=$base/lib/dvrk_psm_ros2_nodes
+[install]
+install_scripts=$base/lib/dvrk_psm_ros2_nodes
+
+
+
+================================================
+FILE: setup.py
+================================================
+from setuptools import setup
+from glob import glob
+
+package_name = 'dvrk_psm_ros2_nodes'
+
+setup(
+    name=package_name,
+    version='0.1.0',
+    packages=[package_name],
+    data_files=[
+        ('share/ament_index/resource_index/packages', [f'resource/{package_name}']),
+        ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/launch', ['launch/bringup.launch.py']),
+        ('share/' + package_name + '/config', glob('config/*.yaml')),
+    ],
+    install_requires=['setuptools'],
+    zip_safe=True,
+    maintainer='Aravind',
+    maintainer_email='aravindskumar1998@gmail.com',
+    description='ROS 2 nodes for dVRK PSM kinematics and joint-level control using CRTK topics.',
+    license='BSD-3-Clause',
+    entry_points={
+        'console_scripts': [
+            'psm_kinematic_ros2node = dvrk_psm_ros2_nodes.psm_kinematic_ros2node:main',
+            'psm_jointlevel_ros2node = dvrk_psm_ros2_nodes.psm_jointlevel_ros2node:main',
+        ],
+    },
+)
+
+
+
+
+================================================
+FILE: config/custom.yaml
+================================================
+# Configuration for a single dVRK arm
+# 'arm_pkg' and 'tool_pkg' point to the ROS packages with the model files
+# 'arm_relpath' and 'tool_relpath' are paths relative to that package's share/ folder
+psm_kinematic:
+  ros__parameters:
+    arm_pkg: "dvrk_config"
+    tool_pkg: "dvrk_config"
+    arm_relpath: "kinematic/PSM.json"
+    tool_relpath: "tool/LARGE_NEEDLE_DRIVER_400006.json"
+
+
+
+
+
+================================================
+FILE: config/default.yaml
+================================================
+# Configuration for a single dVRK arm
+# 'arm_pkg' and 'tool_pkg' point to the ROS packages with the model files
+# 'arm_relpath' and 'tool_relpath' are paths relative to that package's share/ folder
+psm_kinematic:
+  ros__parameters:
+    arm_pkg: "dvrk_config"
+    tool_pkg: "dvrk_config"
+    arm_relpath: "kinematic/PSM.json"
+    tool_relpath: "tool/LARGE_NEEDLE_DRIVER_400006.json"
+
+
+
+
+
+================================================
+FILE: dvrk_psm_ros2_nodes/__init__.py
+================================================
+
+
+
+================================================
+FILE: dvrk_psm_ros2_nodes/psm_jointlevel_ros2node.py
+================================================
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import JointState
+import numpy
+
+
+class PSMJointLevelNode(Node):
+    def __init__(self):
+        super().__init__('psm_jointlevel_ros2node')
+
+        namespace_prefix = f'/{self.declare_parameter('arm_namespace_prefix', 'PSM1').get_parameter_value().string_value}'
+        self.get_logger().info(f'[ROS2 JointLevel Node] Using namespace: {namespace_prefix}')
+
+        # Set initial joint position (e.g., 8 cm insertion)
+        jp = numpy.zeros(6)
+        jp[2] = 0.08  # joint 3 = insertion
+
+        # Full arm
+        self.latest_jp = JointState()
+        self.latest_jp.position = jp.tolist()
+        self.latest_jp.velocity = []
+        self.latest_jp.effort = []
+
+        # Jaw 
+        self.latest_jaw_jp = JointState()
+        self.latest_jaw_jp.position = [0.0]  # single joint for jaw
+        self.latest_jaw_jp.velocity = []
+        self.latest_jaw_jp.effort = []
+
+        # ROS pub/sub for full arm
+        self.pub_setpoint_js = self.create_publisher(JointState, f'{namespace_prefix}/setpoint_js', 10)
+        self.create_subscription(JointState, f'{namespace_prefix}/servo_jp', self.cb_servo_jp, 10)
+
+        # ROS pub/sub for jaw
+        self.create_subscription(JointState, f'{namespace_prefix}/jaw/servo_jp', self.cb_servo_jaw_jp, 10)
+        self.pub_jaw_setpoint = self.create_publisher(JointState, f'{namespace_prefix}/jaw/setpoint_js', 10)
+        self.pub_jaw_measured = self.create_publisher(JointState, f'{namespace_prefix}/jaw/measured_js', 10)
+
+        # Timer to stream at 500 Hz
+        self.timer = self.create_timer(0.002, self.publish_setpoint)
+
+        self.get_logger().info('PSMJointLevelNode initialized and streaming')
+
+    def cb_servo_jp(self, msg):
+        self.latest_jp = msg
+
+    def cb_servo_jaw_jp(self, msg):
+        if len(msg.position) > 0:
+            self.latest_jaw_jp.position = [msg.position[0]]
+
+    def publish_setpoint(self):
+        now = self.get_clock().now().to_msg()
+
+        # Stream arm joint setpoint
+        self.latest_jp.header.stamp = now
+        self.pub_setpoint_js.publish(self.latest_jp)
+
+        # Stream jaw setpoint and measured_js as same (no sensing yet)
+        self.latest_jaw_jp.header.stamp = now
+        self.pub_jaw_setpoint.publish(self.latest_jaw_jp)
+        self.pub_jaw_measured.publish(self.latest_jaw_jp)
+
+def main():
+    rclpy.init()
+    rclpy.spin(PSMJointLevelNode())
+    rclpy.shutdown()
+
+
+
+================================================
+FILE: dvrk_psm_ros2_nodes/psm_kinematic_ros2node.py
+================================================
+
+#!/usr/bin/env python3
+
+import os
+import numpy as np
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import JointState
+from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Header
+from ament_index_python.packages import get_package_share_directory
+
+from crtk_msgs.msg import OperatingState, StringStamped
+from tf_transformations import quaternion_matrix, quaternion_from_matrix
+from cisstRobotPython import robManipulator
+
+class PSMKinematicNode(Node):
+    def __init__(self):
+        super().__init__('psm_kinematic_ros2node')
+
+        # Load robot
+        arm_pkg  = self.declare_parameter('arm_pkg',  'dvrk_config').get_parameter_value().string_value
+        tool_pkg = self.declare_parameter('tool_pkg', 'dvrk_config').get_parameter_value().string_value
+        arm_rel  = self.declare_parameter('arm_relpath',  'kinematic/PSM.json').get_parameter_value().string_value
+        tool_rel = self.declare_parameter('tool_relpath', 'tool/LARGE_NEEDLE_DRIVER_400006.json').get_parameter_value().string_value ## FIXME: Tool name can be moved to a config file or added to launch.py
+        namespace_prefix = f'/{self.declare_parameter('arm_namespace_prefix', 'PSM1').get_parameter_value().string_value}'
+
+        arm_path  = os.path.join(get_package_share_directory(arm_pkg),  arm_rel)
+        tool_path = os.path.join(get_package_share_directory(tool_pkg), tool_rel)
+
+        self.get_logger().info(f'[ROS2 Kinematic Node] Using namespace: {namespace_prefix}')
+        self.get_logger().info(f'[ROS2 Kinematic Node] Arm model:  {arm_path}')
+        self.get_logger().info(f'[ROS2 Kinematic Node] Tool model: {tool_path}')
+
+        self.robot = robManipulator()
+        self.robot.LoadRobot(arm_path)
+        self.robot.LoadRobot(tool_path)  # this modifies the existing robot chain
+
+        self.num_joints = len(self.robot.links)
+        self.last_joint_position = np.zeros(self.num_joints)
+
+        self.state_sub = self.create_subscription(StringStamped, f'{namespace_prefix}/state_command', self.state_cb, 10)
+        self.state_pub = self.create_publisher(OperatingState, f'{namespace_prefix}/operating_state', 10)
+
+        self.servo_cp_sub = self.create_subscription(PoseStamped, f'{namespace_prefix}/servo_cp', self.ik_cb, 10)
+        self.servo_jp_pub = self.create_publisher(JointState, f'{namespace_prefix}/servo_jp', 10)
+
+        self.setpoint_js_sub = self.create_subscription(JointState, f'{namespace_prefix}/setpoint_js', self.fk_cb, 10)
+        self.setpoint_cp_pub = self.create_publisher(PoseStamped, f'{namespace_prefix}/setpoint_cp', 10)
+        self.measured_cp_pub = self.create_publisher(PoseStamped, f'{namespace_prefix}/measured_cp', 10)
+
+    def state_cb(self, msg):
+        self.publish_operating_state()
+
+    def publish_operating_state(self): ## Can be made a call back
+        msg = OperatingState()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.state = 'ENABLED'
+        msg.is_homed = True
+        msg.is_busy = False
+        self.state_pub.publish(msg)
+
+    def ik_cb(self, msg: PoseStamped):
+        cp = np.identity(4)
+        cp[:3, 3] = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
+        q = [msg.pose.orientation.x, msg.pose.orientation.y,
+             msg.pose.orientation.z, msg.pose.orientation.w]
+        cp[:3, :3] = quaternion_matrix(q)[:3, :3]
+
+        jp = np.zeros(self.num_joints)
+        self.robot.InverseKinematics(jp, cp)
+        self.last_joint_position = jp
+
+        js = JointState()
+        js.header.stamp = self.get_clock().now().to_msg()
+        js.name = [f'joint_{i+1}' for i in range(self.num_joints)]
+        js.position = list(jp)
+        self.servo_jp_pub.publish(js)
+
+    def fk_cb(self, msg: JointState):
+        q = np.array(msg.position)
+        cp = self.robot.ForwardKinematics(q)
+        pos = cp[:3, 3]
+        quat = quaternion_from_matrix(cp)
+
+        pose = PoseStamped()
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.pose.position.x = pos[0]
+        pose.pose.position.y = pos[1]
+        pose.pose.position.z = pos[2]
+        pose.pose.orientation.x = quat[0]
+        pose.pose.orientation.y = quat[1]
+        pose.pose.orientation.z = quat[2]
+        pose.pose.orientation.w = quat[3]
+        self.setpoint_cp_pub.publish(pose)
+        # Publish measured Cartesian position
+        self.measured_cp_pub.publish(pose)
+
+def main():
+    rclpy.init()
+    rclpy.spin(PSMKinematicNode())
+    rclpy.shutdown()
+
+
+
+
+
+
+================================================
+FILE: launch/bringup.launch.py
+================================================
+import os
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+
+def generate_launch_description():
+    package_share = get_package_share_directory('dvrk_psm_ros2_nodes')
+    default_config = os.path.join(package_share, 'config', 'default.yaml')
+
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            'config',
+            default_value=default_config,
+            description='Path to parameter YAML file for PSM configuration'
+        ),
+        DeclareLaunchArgument(
+            'arm_namespace',
+            default_value='PSM1',
+            description='Namespace prefix for this arm (e.g. PSM1, PSM2)'
+        ),
+
+        Node(
+            package='dvrk_psm_ros2_nodes',
+            executable='psm_kinematic_ros2node',
+            name='psm_kinematic',
+            output='screen',
+            parameters=[LaunchConfiguration('config'), {'arm_namespace_prefix': LaunchConfiguration('arm_namespace')}],
+        ),
+        Node(
+            package='dvrk_psm_ros2_nodes',
+            executable='psm_jointlevel_ros2node',
+            name='psm_jointlevel',
+            output='screen',
+            parameters=[{'arm_namespace_prefix': LaunchConfiguration('arm_namespace')}],
+        ),
+    ])
+
+
+
+================================================
+FILE: resource/dvrk_psm_ros2_nodes
+================================================
+dvrk_psm_ros2_nodes
+

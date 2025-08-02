@@ -73,6 +73,7 @@ class PSMKinematicNode(Node):
 
         js = JointState()
         js.header.stamp = self.get_clock().now().to_msg()
+        js.header.frame_id = 'map'
         js.name = [f'joint_{i+1}' for i in range(self.num_joints)]
         js.position = list(jp)
         self.servo_jp_pub.publish(js)
@@ -85,6 +86,7 @@ class PSMKinematicNode(Node):
 
         pose = PoseStamped()
         pose.header.stamp = self.get_clock().now().to_msg()
+        pose.header.frame_id = 'map'
         pose.pose.position.x = pos[0]
         pose.pose.position.y = pos[1]
         pose.pose.position.z = pos[2]
