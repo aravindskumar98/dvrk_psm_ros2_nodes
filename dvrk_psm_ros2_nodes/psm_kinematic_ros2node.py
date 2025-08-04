@@ -84,7 +84,7 @@ class PSMKinematicNode(Node):
         js = JointState()
         js.header.stamp = self.get_clock().now().to_msg()
         js.header.frame_id = 'map'
-        js.name = [f'joint_{i+1}' for i in range(self.num_joints)]
+        js.name = ['Base_Yaw', 'Yaw_Pitch_End', 'Pitch_End_Main_Insert', 'Main_Insert_Tool_Roll', 'Tool_Roll_Tool_Pitch', 'Tool_Yaw_Tool_Pitch' ] # [f'joint_{i+1}' for i in range(self.num_joints)]
         js.position = list(jp)
         self.servo_jp_pub.publish(js)
 
