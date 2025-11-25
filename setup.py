@@ -23,7 +23,7 @@ setup(
         'console_scripts': [
             'psm_kinematic_ros2node = dvrk_psm_ros2_nodes.psm_kinematic_ros2node:main',
             'psm_jointlevel_ros2node = dvrk_psm_ros2_nodes.psm_jointlevel_ros2node:main',
+            'psmove_mtmr_sim = dvrk_psm_ros2_nodes.psmove_mtmr_sim:main',
         ],
     },
 )
-

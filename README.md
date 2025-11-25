@@ -63,3 +63,15 @@ Notes:
 - `psm_kinematic_ros2node` runs IK and republishes joint targets on `/PSM1/servo_jp`; it also computes FK for any incoming `/PSM1/setpoint_js` to keep `/PSM1/setpoint_cp` and `/PSM1/measured_cp` populated.
 - If you use the provided launch file, `psm_jointlevel_ros2node` republishes `/PSM1/servo_jp` as `/PSM1/setpoint_js` at 500 Hz and mirrors jaw commands. Use this when you need a simple joint streamer; skip it when Isaac Sim or another simulator handles the joints.
 - The dVRK system JSON `system-MTMR-PSMove-PSM1_from_ROS.json` in `cisst-saw/sawIntuitiveResearchKit/share/system` wires the MTMR + PS Move inputs to the PSM topics used here.
+
+## Simulate MTMR/PS Move commands
+Publish small, bounded motions on the PSM command topics:
+
+```bash
+ros2 run dvrk_psm_ros2_nodes psmove_mtmr_sim --ros-args -p arm_namespace_prefix:=PSM1 -p rate_hz:=50.0 -p smoothing_alpha:=0.05
+```
+
+What it does:
+- Streams `/PSM1/servo_cp` with Cartesian sine wave
+- Streams `/PSM1/jaw/servo_jp` with a jaw angle between 0 and 0.6 rad.
+
