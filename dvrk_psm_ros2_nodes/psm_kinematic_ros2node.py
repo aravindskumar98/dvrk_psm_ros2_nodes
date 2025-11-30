@@ -22,6 +22,14 @@ def latched_qos(depth: int = 1) -> QoSProfile:
     qos.durability = DurabilityPolicy.TRANSIENT_LOCAL  # store them in the RMW
     return qos
 
+# how it works:
+# subscribes to servo_cp from MTM
+# computes ik to get joint positions
+# publishes joint positions to servo_jp of PSM 
+# subscribes to setpoint_js from PSM
+# computes fk to get cartesian position
+# publishes cartesian position to setpoint_cp of MTM
+
 class PSMKinematicNode(Node):
     def __init__(self):
         super().__init__('psm_kinematic_ros2node')

@@ -33,30 +33,45 @@ Copy `config/default.yaml` and modify:
 
 ## Isaac Sim setup
 
-Run Isaac Sim and the dVRK system configuration for MTMR + PS Move + PSM1, then start the PSM kinematics node. Use separate terminals for each block so logs stay readable:
+Run Isaac Sim and the dVRK system configuration for MTMR + PS Move + PSM1, then start the PSM kinematics node. Use separate terminals for each block so logs stay readable.
 
+**Prerequisites**: Source ROS2 in all terminals:
 ```bash
-# Terminal 1: launch Isaac Sim
+source /opt/ros/${ROS_DISTRO}/setup.bash
+```
+
+**Terminal 1: IsaacSim**
+
+Launch IsaacSim and load the USD scene with PSM robot and ActionGraph:
+```bash
+export isaac_sim_package_path=$HOME/isaacsim/_build/linux-x86_64/release/
 $isaac_sim_package_path/isaac-sim.sh
+```
+Topics: Subscribes to `/PSM1/servo_jp` and `/PSM1/jaw/servo_jp`, publishes `/PSM1/measured_js`, `/PSM1/setpoint_js`, `/PSM1/jaw/measured_js`, and `/PSM1/jaw/setpoint_js`.
 
-# Terminal 2: start the dVRK system bridge
+**Terminal 2: dVRK System**
+
+Start the dVRK system bridge with MTMR (PSMove controller):
+```bash
 cd src/cisst-saw/sawIntuitiveResearchKit/share/system/
-# (use the devel branch if needed)
 ros2 run dvrk_robot dvrk_system -j system-MTMR-PSMove-PSM1_from_ROS.json
+```
+Topics: Publishes `{namespace}/state_command` and `{namespace}/servo_cp` (cartesian pose commands from MTM).
 
-# Terminal 3: observe joint state feedback
-ros2 topic echo /PSM1/measured_js
+**Terminal 3: Kinematic Node**
 
-# Terminal 4: launch only the kinematics node; Isaac Sim provides joint simulation
+Launch only the kinematics node (Isaac Sim provides joint simulation):
+```bash
 ros2 run dvrk_psm_ros2_nodes psm_kinematic_ros2node \
   --ros-args \
   --params-file $(ros2 pkg prefix dvrk_psm_ros2_nodes)/share/dvrk_psm_ros2_nodes/config/default.yaml \
   -p arm_namespace_prefix:=PSM1
 ```
 
-Notes:
+**Notes:**
 - The launch file also starts the joint-level node, which is not needed when Isaac Sim is simulating the joints.
-- MTM is in cartesian space, PSM is in joint space on the Isaac Sim side.
+- MTM operates in cartesian space, PSM in joint space on the Isaac Sim side.
+- The kinematic node bridges them: subscribes to `servo_cp` from MTM, computes IK, publishes `servo_jp` to PSM, then computes FK from `setpoint_js` and publishes `setpoint_cp`/`measured_cp` back to MTM for feedback.
 
 ## Mental model / topic flow
 - For hardware or simulation: MTM/PS Move (e.g., from `sawPSMove`) publishes Cartesian servo commands on `/PSM1/servo_cp`.
