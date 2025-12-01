@@ -1,11 +1,10 @@
-# Configuration for a single dVRK arm
+# Configuration for a single dVRK arm (custom example)
 # 'arm_pkg' and 'tool_pkg' point to the ROS packages with the model files
 # 'arm_relpath' and 'tool_relpath' are paths relative to that package's share/ folder
+
 psm_kinematic:
   ros__parameters:
     arm_pkg: "dvrk_config"
     tool_pkg: "dvrk_config"
     arm_relpath: "kinematic/PSM.json"
     tool_relpath: "tool/LARGE_NEEDLE_DRIVER_400006.json"
-
-

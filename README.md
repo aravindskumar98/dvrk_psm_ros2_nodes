@@ -1,29 +1,65 @@
 
 # dvrk_psm_ros2_nodes
 
-ROS 2 nodes for dVRK PSM kinematics and joint-level control.
+C++ ROS 2 nodes for dVRK PSM kinematics and joint-level control using CRTK topics.
 
 ## What this package does
 - `psm_kinematic_ros2node`: loads the PSM + tool kinematic chains from JSON (from `dvrk_config` by default). It converts Cartesian servo commands (`<arm>/servo_cp`) into joint targets (`<arm>/servo_jp`) and publishes FK for whatever joint target it last saw (`<arm>/setpoint_cp`, `<arm>/measured_cp`). It also latches an ENABLED operating state on `<arm>/operating_state`.
 - `psm_jointlevel_ros2node`: simple joint-level streamer. It seeds the arm with a small insertion, listens for joint servo commands, and republishes them as setpoints at 500 Hz on `<arm>/setpoint_js`. It mirrors jaw setpoints to `jaw/measured_js` (no sensing yet).
 - The launch file starts both nodes and wires the namespace via `arm_namespace` (default `PSM1`), so topics look like `/PSM1/servo_cp`, `/PSM1/servo_jp`, `/PSM1/jaw/servo_jp`, etc.
 
-Related workspace packages (for context):
-- `dvrk` and `cisst-saw`: provide the dVRK ROS tooling and system JSONs (`sawIntuitiveResearchKit` under `cisst-saw`).
-- `crtk`: common message definitions (e.g., `OperatingState`).
-- `sawPSMove`: PS Move controller input that feeds the MTM/PSM control stack.
+## Dependencies
+
+### ROS 2 Dependencies
+- `rclcpp`
+- `ament_index_cpp`
+- `std_msgs`
+- `sensor_msgs`
+- `geometry_msgs`
+- `crtk_msgs` (CRTK message definitions)
+- `tf2`, `tf2_ros`, `tf2_geometry_msgs`
+
+### cisst Dependencies
+The package requires the **cisst** library suite and Qt5:
+- `cisstCommon`, `cisstVector`, `cisstNumerical`, `cisstRobot` (provides `robManipulator`)
+- Qt5 (Core, Widgets, OpenGL, Xml, XmlPatterns)
+
+### Installing cisst
+See the [cisst wiki](https://github.com/jhu-cisst/cisst/wiki) for detailed build instructions. For ROS 2:
+```bash
+cd ~/ros2_ws/src
+git clone https://github.com/jhu-cisst/cisst.git
+git clone https://github.com/jhu-cisst/cisst-ros.git
+cd ~/ros2_ws
+colcon build --packages-select cisst cisst_ros_bridge
+```
+
+## Building
+
+```bash
+cd ~/ros2_ws
+colcon build --packages-select dvrk_psm_ros2_nodes
+source install/setup.bash
+```
+
+## Related Packages
+- `dvrk` and `cisst-saw`: provide the dVRK ROS tooling and system JSONs (`sawIntuitiveResearchKit` under `cisst-saw`)
+- `crtk_msgs`: common message definitions (e.g., `OperatingState`)
+- `sawPSMove`: PS Move controller input that feeds the MTM/PSM control stack
 
 ## Launch
 
 **Default (PSM1):**
 ```bash
 ros2 launch dvrk_psm_ros2_nodes bringup.launch.py
-````
+```
 
 **Switch to PSM2 with different tool/arm:**
 
 ```bash
-ros2 launch dvrk_psm_ros2_nodes bringup.launch.py arm_namespace:=PSM2 config:=$(ros2 pkg prefix dvrk_psm_ros2_nodes)/share/dvrk_psm_ros2_nodes/config/custom.yaml
+ros2 launch dvrk_psm_ros2_nodes bringup.launch.py \
+    arm_namespace:=PSM2 \
+    config:=$(ros2 pkg prefix dvrk_psm_ros2_nodes)/share/dvrk_psm_ros2_nodes/config/custom.yaml
 ```
 
 **Custom config:**
@@ -79,14 +115,17 @@ ros2 run dvrk_psm_ros2_nodes psm_kinematic_ros2node \
 - If you use the provided launch file, `psm_jointlevel_ros2node` republishes `/PSM1/servo_jp` as `/PSM1/setpoint_js` at 500 Hz and mirrors jaw commands. Use this when you need a simple joint streamer; skip it when Isaac Sim or another simulator handles the joints.
 - The dVRK system JSON `system-MTMR-PSMove-PSM1_from_ROS.json` in `cisst-saw/sawIntuitiveResearchKit/share/system` wires the MTMR + PS Move inputs to the PSM topics used here.
 
-## Simulate MTMR/PS Move commands
-Publish small, bounded motions on the PSM command topics:
+## Simulate MTMR/PS Move commands (Deprecated)
+
+**Note:** The Python-based `psmove_mtmr_sim` script has been moved to the `deprecated/` folder. The package now uses C++ implementations.
+
+If you need to test the system, you can still use the deprecated script:
 
 ```bash
-ros2 run dvrk_psm_ros2_nodes psmove_mtmr_sim --ros-args -p arm_namespace_prefix:=PSM1 -p rate_hz:=50.0 -p smoothing_alpha:=0.05
+python3 deprecated/psmove_mtmr_sim.py --ros-args -p arm_namespace_prefix:=PSM1 -p rate_hz:=50.0 -p smoothing_alpha:=0.05
 ```
 
 What it does:
 - Streams `/PSM1/servo_cp` with Cartesian sine wave
-- Streams `/PSM1/jaw/servo_jp` with a jaw angle between 0 and 0.6 rad.
+- Streams `/PSM1/jaw/servo_jp` with a jaw angle between 0 and 0.6 rad
 

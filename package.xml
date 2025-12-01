@@ -1,25 +1,34 @@
 <?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>dvrk_psm_ros2_nodes</name>
   <version>0.1.0</version>
-  <description>ROS 2 nodes for dVRK PSM kinematics and joint-level control using CRTK topics.</description>
+  <description>C++ ROS 2 nodes for dVRK PSM kinematics and joint-level control using CRTK topics.</description>
 
   <maintainer email="aravindskumar1998@gmail.com">Aravind</maintainer>
-  <license>BSD-3-Clause</license>
+  <license>MIT</license>
 
-  <buildtool_depend>ament_python</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <exec_depend>rclpy</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>sensor_msgs</exec_depend>
-  <exec_depend>crtk_msgs</exec_depend>
-  <exec_depend>cisst</exec_depend>
-  <exec_depend>cisst-ros</exec_depend>
-  <exec_depend>tf_transformations</exec_depend>
-  <exec_depend>ament_index_python</exec_depend>
+  <!-- ROS 2 dependencies -->
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>crtk_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+
+  <!-- cisst dependencies -->
+  <depend>cisst</depend>
+  <depend>cisst_ros_bridge</depend>
+
+  <!-- Build testing dependencies -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 
   <export>
-    <build_type>ament_python</build_type>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>
- 
